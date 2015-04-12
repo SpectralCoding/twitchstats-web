@@ -115,9 +115,10 @@ return [
 		'cluster' => false,
 
 		'default' => [
-			'host'     => '127.0.0.1',
-			'port'     => 6379,
-			'database' => 0,
+			'host'     => getenv('REDIS_HOST'),
+			'port'     => getenv('REDIS_PORT'),
+			'database' => getenv('REDIS_DATABASE'),
+			'password' => getenv('REDIS_PASSWORD')
 		],
 
 	],

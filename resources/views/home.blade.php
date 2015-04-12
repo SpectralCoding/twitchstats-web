@@ -1,66 +1,179 @@
 @extends('app')
 
+@section('title', 'Twitch Stats')
+
 @section('content')
 	<div class="p1" id="mainchart"></div>
 	<br />
 	<div class="p3" id="top_three">
-		<div class="one">
-			Column 1
-		</div>
-		<div class="two">
-			Column 2
-		</div>
-		<div class="three">
-			Column 2
-		</div>
+		<div class="one" id="top_emotes"></div>
+		<div class="two" id="top_channels"></div>
+		<div class="three" id="top_kappa"></div>
 	</div>
 	<script type="text/javascript">
-		$(function () {
-			$('#mainchart').highcharts({
-				title: {
-					text: 'Monthly Average Temperature',
-					x: -20 //center
-				},
-				subtitle: {
-					text: 'Source: WorldClimate.com',
-					x: -20
-				},
+		$(document).ready(function() {
+			window.defaultTime = '10080';
+			window.detaultTimeText = 'Last 7 Days';
+			window.twitchCharts = new Array();
+			Highcharts.setOptions({
+				global: { useUTC: false },
+				lang: { thousandsSep: ',' }
+			});
+			window.twitchCharts['mainchart'] = new Highcharts.Chart({
+				chart: { type: 'line', renderTo: 'mainchart', animation: Highcharts.svg },
+				title: { text: 'Global Chat Activity - ' + detaultTimeText },
+				exporting: { enabled: false },
 				xAxis: {
-					categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-						'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+					type: 'datetime',
+					tickInterval: 24 * 3600 * 1000,
+					gridLineWidth: 1,
+					dateTimeLabelFormats: { day: '%b %e' }
 				},
 				yAxis: {
-					title: {
-						text: 'Temperature (°C)'
-					},
-					plotLines: [{
-						value: 0,
-						width: 1,
-						color: '#808080'
-					}]
+					title: { text: 'Lines' },
+					min: 0
 				},
-				tooltip: {
-					valueSuffix: '°C'
+				legend: { enabled: false },
+				tooltip: { valueSuffix: ' Lines' },
+				series: [ { name: 'Total Lines' } ]
+			});
+			$.get('/channel/_global/' + window.defaultTime + '/true', function (jsonData) {
+				var total = 0;
+				var dataArr = [];
+				$.each(jsonData['data'], function(timeID, lineCount) {
+					dataArr.push([timeid_to_time(timeID, jsonData['accuracy']), lineCount]);
+					total += lineCount;
+				});
+				window.twitchCharts['mainchart'].series[0].setData(dataArr);
+				window.twitchCharts['mainchart'].setTitle(null, { text: "Total Lines: " + total.toLocaleString() });
+			});
+			window.twitchCharts['top_emotes'] = new Highcharts.Chart({
+				chart: {
+					type: 'pie',
+					plotBackgroundColor: null,
+					plotBorderWidth: null,
+					plotShadow: false,
+					renderTo: 'top_emotes',
+					animation: Highcharts.svg
 				},
-				legend: {
-					layout: 'vertical',
-					align: 'right',
-					verticalAlign: 'middle',
-					borderWidth: 0
+				title: { text: 'Top Emotes - ' + detaultTimeText },
+				exporting: { enabled: false },
+				plotOptions: {
+					pie: {
+						allowPointSelect: true,
+						cursor: 'pointer',
+						dataLabels: {
+							enabled: true,
+							format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+							style: {
+								color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+							}
+						}
+					}
 				},
 				series: [{
-					name: 'Tokyo',
-					data: [7.0, 6.9, 9.5, 14.5, 18.2, 21.5, 25.2, 26.5, 23.3, 18.3, 13.9, 9.6]
-				}, {
-					name: 'New York',
-					data: [-0.2, 0.8, 5.7, 11.3, 17.0, 22.0, 24.8, 24.1, 20.1, 14.1, 8.6, 2.5]
-				}, {
-					name: 'Berlin',
-					data: [-0.9, 0.6, 3.5, 8.4, 13.5, 17.0, 18.6, 17.9, 14.3, 9.0, 3.9, 1.0]
-				}, {
-					name: 'London',
-					data: [3.9, 4.2, 5.7, 8.5, 11.9, 15.2, 17.0, 16.6, 14.2, 10.3, 6.6, 4.8]
+					type: 'pie',
+					name: 'Total Times Said'
 				}]
+			});
+			$.get('/topemotes/_global/' + window.defaultTime + '/10', function (jsonData) {
+				var total = 0;
+				var dataArr = [];
+				$.each(jsonData, function(emote, saidCount) {
+					dataArr.push([emote, saidCount]);
+					total += saidCount;
+				});
+				window.twitchCharts['top_emotes'].series[0].setData(dataArr);
+				window.twitchCharts['top_emotes'].setTitle(null, { text: 'Total Emotes: ' + total.toLocaleString() });
+			});
+			window.twitchCharts['top_channels'] = new Highcharts.Chart({
+				chart: {
+					type: 'pie',
+					plotBackgroundColor: null,
+					plotBorderWidth: null,
+					plotShadow: false,
+					renderTo: 'top_channels',
+					animation: Highcharts.svg
+				},
+				title: { text: 'Popular Channels - ' + detaultTimeText },
+				exporting: { enabled: false },
+				plotOptions: {
+					pie: {
+						allowPointSelect: true,
+						cursor: 'pointer',
+						dataLabels: {
+							enabled: true,
+							format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+							style: {
+								color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+							}
+						}
+					}
+				},
+				series: [{
+					type: 'pie',
+					name: 'Total Lines'
+				}]
+			});
+			$.get('/topchannels/' + window.defaultTime + '/30', function (jsonData) {
+				var total = 0;
+				var dataArr = [];
+				$.each(jsonData, function(channel, lineCount) {
+					dataArr.push([channel, lineCount]);
+					total += lineCount;
+				});
+				window.twitchCharts['top_channels'].series[0].setData(dataArr);
+				window.twitchCharts['top_channels'].setTitle(null, { text: 'Total Lines: ' + total.toLocaleString()});
+			});
+			window.twitchCharts['top_kappa'] = new Highcharts.Chart({
+				chart: {
+					type: 'column',
+					renderTo: 'top_kappa',
+					animation: Highcharts.svg
+				},
+				title: { text: 'Kappa Leaders - ' + detaultTimeText },
+				exporting: { enabled: false },
+				xAxis: {
+					type: 'category',
+					labels: {
+						rotation: -45,
+						style: {
+							fontSize: '13px',
+							fontFamily: 'Verdana, sans-serif'
+						}
+					}
+				},
+				yAxis: {
+					min: 0,
+					minorTickInterval: 10,
+					title: {
+						text: 'Percentage'
+					}
+				},
+				dataLabels: {
+					enabled: true,
+					rotation: -90,
+					color: '#FFFFFF',
+					align: 'right',
+					format: '{point.y:.1f}', // one decimal
+					y: 10, // 10 pixels down from the top
+					style: {
+						fontSize: '13px',
+						fontFamily: 'Verdana, sans-serif'
+					}
+				},
+				legend: { enabled: false },
+				series: [{
+					name: 'Channel'
+				}]
+			});
+			$.get('/topchannelforemote/Kappa/' + window.defaultTime + '/10', function (jsonData) {
+				var dataArr = [];
+				$.each(jsonData, function(channel, emotePercent) {
+					dataArr.push([channel, emotePercent]);
+				});
+				window.twitchCharts['top_kappa'].series[0].setData(dataArr);
+				window.twitchCharts['top_kappa'].setTitle(null, { text: "Kappa as a Percent of Total Emotes" });
 			});
 		});
 	</script>

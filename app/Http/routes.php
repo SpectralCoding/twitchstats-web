@@ -12,8 +12,8 @@
 */
 
 Route::get('/', 'HomeController@index');
-
-Route::controllers([
-	'auth' => 'Auth\AuthController',
-	'password' => 'Auth\PasswordController',
-]);
+Route::get('channel/{channel}/{accuracy}/{aggressive}', 'DataController@channel');
+Route::get('emote/{channel}/{emote}/{accuracy}', 'DataController@emote');
+Route::get('topemotes/{channel}/{pastmin}/{count}', 'DataController@topemotes');
+Route::get('topchannels/{pastmin}/{count}', 'DataController@topchannels');
+Route::get('topchannelforemote/{emote}/{pastmin}/{count}', 'DataController@topchannelforemote');
